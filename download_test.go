@@ -16,10 +16,11 @@ func Test_GetDownloadUrl(t *testing.T) {
 	}
 
 	type TestData struct {
-		name    string
-		args    *Args
-		wantUrl string
-		wantDir string
+		name     string
+		args     *Args
+		wantUrl  string
+		wantDir  string
+		wantFile string
 	}
 
 	testData := []TestData{
@@ -32,8 +33,9 @@ func Test_GetDownloadUrl(t *testing.T) {
 				major:   4,
 				minor:   0,
 			},
-			wantUrl: "https://downloads.mongodb.org/linux/mongodb-linux-x86_64-4.0.6.tgz",
-			wantDir: "mongodb-linux-x86_64-4.0.6",
+			wantUrl:  "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.6.tgz",
+			wantDir:  "mongodb-linux-x86_64-4.0.6",
+			wantFile: "mongodb-linux-x86_64-4.0.6.tgz",
 		},
 		{
 			name: "linux - 4.2.0",
@@ -44,8 +46,9 @@ func Test_GetDownloadUrl(t *testing.T) {
 				major:   4,
 				minor:   2,
 			},
-			wantUrl: "https://downloads.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-4.2.0.tgz",
-			wantDir: "mongodb-linux-x86_64-ubuntu2004-4.2.0",
+			wantUrl:  "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-4.2.0.tgz",
+			wantDir:  "mongodb-linux-x86_64-ubuntu2004-4.2.0",
+			wantFile: "mongodb-linux-x86_64-ubuntu2004-4.2.0.tgz",
 		},
 		{
 			name: "osx - 4.0.6",
@@ -55,8 +58,9 @@ func Test_GetDownloadUrl(t *testing.T) {
 				major:   4,
 				minor:   0,
 			},
-			wantUrl: "https://downloads.mongodb.org/osx/mongodb-osx-ssl-x86_64-4.0.6.tgz",
-			wantDir: "mongodb-osx-ssl-x86_64-4.0.6",
+			wantUrl:  "https://fastdl.mongodb.org/osx/mongodb-osx-ssl-x86_64-4.0.6.tgz",
+			wantDir:  "mongodb-osx-ssl-x86_64-4.0.6",
+			wantFile: "mongodb-osx-ssl-x86_64-4.0.6.tgz",
 		},
 		{
 			name: "osx - 4.2.0",
@@ -66,14 +70,15 @@ func Test_GetDownloadUrl(t *testing.T) {
 				major:   4,
 				minor:   2,
 			},
-			wantUrl: "https://fastdl.mongodb.org/osx/mongodb-macos-x86_64-4.2.0.tgz",
-			wantDir: "mongodb-macos-x86_64-4.2.0",
+			wantUrl:  "https://fastdl.mongodb.org/osx/mongodb-macos-x86_64-4.2.0.tgz",
+			wantDir:  "mongodb-macos-x86_64-4.2.0",
+			wantFile: "mongodb-macos-x86_64-4.2.0.tgz",
 		},
 	}
 
 	for _, tt := range testData {
 		t.Run(tt.name, func(t *testing.T) {
-			url, dir, err := getDownloadUrl(
+			url, dir, file, err := getDownloadUrl(
 				tt.args.version,
 				tt.args.os,
 				tt.args.distro,
@@ -84,6 +89,7 @@ func Test_GetDownloadUrl(t *testing.T) {
 
 			require.Equal(t, tt.wantUrl, url)
 			require.Equal(t, tt.wantDir, dir)
+			require.Equal(t, tt.wantFile, file)
 		})
 	}
 }

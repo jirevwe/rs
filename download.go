@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -38,12 +39,17 @@ var downloadCmd = &cobra.Command{
 			return ErrMissingVersionArg
 		}
 
-		url, dir, err := getDownloadUrl(version, runtime.GOOS, distro, major, minor)
+		url, dir, file, err := getDownloadUrl(version, runtime.GOOS, distro, major, minor)
 		if err != nil {
 			return err
 		}
 
-		err = downloadFile(dir, url)
+		err = downloadFile(file, url)
+		if err != nil {
+			return err
+		}
+
+		err = extract(file, dir, version)
 		if err != nil {
 			return err
 		}
@@ -52,7 +58,48 @@ var downloadCmd = &cobra.Command{
 	},
 }
 
-func getDownloadUrl(version string, os string, distro string, major int64, minor int64) (string, string, error) {
+func extract(file, dir, version string) error {
+	// extract the package
+	tarCmd := exec.Command("tar", "-zxvf", file)
+	err := tarCmd.Run()
+	if err != nil {
+		return err
+	}
+	println("extrated the binaries to", dir)
+
+	// move the folder contents to the home dir
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	home := fmt.Sprintf("%s/.rs/%s", homedir, version)
+	makeCmd := exec.Command("mkdir", "-p", home)
+	err = makeCmd.Run()
+	if err != nil {
+		return err
+	}
+	println("init home dir at", home)
+
+	mvCmd := exec.Command("mv", "-v", fmt.Sprintf("./%s/bin", dir), home)
+	err = mvCmd.Run()
+	if err != nil {
+		return err
+	}
+	println("moved the binaries to", home)
+
+	// delete the package extracted
+	rmCmd := exec.Command("rm", "-rf", dir)
+	err = rmCmd.Run()
+	if err != nil {
+		return err
+	}
+	println("cleaned up done")
+
+	return nil
+}
+
+func getDownloadUrl(version string, os string, distro string, major int64, minor int64) (string, string, string, error) {
 	isBefore42 := major < 4 || (major == 4 && minor < 2)
 	var file, dir string
 
@@ -73,14 +120,13 @@ func getDownloadUrl(version string, os string, distro string, major int64, minor
 		}
 		break
 	default:
-		return "", "", fmt.Errorf("Unrecognized os %s", os)
+		return "", "", "", fmt.Errorf("Unrecognized os %s", os)
 	}
 
 	file = fmt.Sprintf("%s.tgz", dir)
 	url := fmt.Sprintf("%s/%s/%s", base, os, file)
-	println(url)
 
-	return url, dir, nil
+	return url, dir, file, nil
 }
 
 func parseVersionNumber(version string) (int64, int64, error) {
@@ -90,7 +136,6 @@ func parseVersionNumber(version string) (int64, int64, error) {
 	}
 
 	matched := r.FindAll([]byte(version), -1)
-	fmt.Printf("%+v\n", matched)
 
 	if len(matched) == 0 {
 		return 0, 0, ErrInvalidVersionFormat
