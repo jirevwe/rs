@@ -76,7 +76,6 @@ func extract(file, dir, version string) error {
 	}
 	println("Extrated the binaries to", dir)
 
-	// remove
 	err = os.RemoveAll(homeVerDir)
 	if err != nil {
 		return err
@@ -96,12 +95,11 @@ func extract(file, dir, version string) error {
 	println("moved the binaries to", homeVerDir)
 
 	// delete the package extracted
-	rmCmd := exec.Command("rm", "-rf", dir)
-	err = rmCmd.Run()
+	err = os.RemoveAll(extractDir)
 	if err != nil {
 		return err
 	}
-	println("cleaned up done")
+	println("cleaned up files at", extractDir)
 
 	return nil
 }
