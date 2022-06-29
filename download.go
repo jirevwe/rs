@@ -17,26 +17,25 @@ import (
 
 var (
 	distro                  = ""
+	version                 = ""
 	base                    = "https://fastdl.mongodb.org"
-	ErrInvalidVersionFormat = errors.New("version must be in x.x.x format")
-	ErrMissingVersionArg    = errors.New("please pass a valid mongodb version")
+	ErrInvalidVersionFormat = errors.New("please pass a valid mongodb version; version must be in x.x.x format")
 )
+
+func init() {
+	rootCmd.AddCommand(downloadCmd)
+	downloadCmd.Flags().StringVar(&distro, "distro", "ubuntu1804", "specify the linux distro")
+	downloadCmd.Flags().StringVar(&version, "version", "4.2.21", "specify the mongodb version")
+}
 
 var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: "Downloads and configures a mongodb version",
 	Long:  "Downloads and configures a mongodb version",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// default mongodb version
-		version := "4.2.21"
-
-		if len(args) > 0 {
-			version = args[0]
-		}
-
 		major, minor, err := parseVersionNumber(version)
 		if err != nil {
-			return ErrMissingVersionArg
+			return err
 		}
 
 		url, dir, file, err := getDownloadUrl(version, runtime.GOOS, distro, major, minor)
@@ -59,34 +58,42 @@ var downloadCmd = &cobra.Command{
 }
 
 func extract(file, dir, version string) error {
-	// extract the package
-	tarCmd := exec.Command("tar", "-zxvf", file)
-	err := tarCmd.Run()
-	if err != nil {
-		return err
-	}
-	println("extrated the binaries to", dir)
-
 	// move the folder contents to the home dir
 	homedir, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
 
-	home := fmt.Sprintf("%s/.rs/%s", homedir, version)
-	makeCmd := exec.Command("mkdir", "-p", home)
-	err = makeCmd.Run()
-	if err != nil {
-		return err
-	}
-	println("init home dir at", home)
+	extractDir := fmt.Sprintf("./%s", dir)
+	homeDir := fmt.Sprintf("%s/.rs", homedir)
+	homeVerDir := fmt.Sprintf("%s/.rs/%s", homedir, version)
 
-	mvCmd := exec.Command("mv", "-v", fmt.Sprintf("./%s/bin", dir), home)
-	err = mvCmd.Run()
+	// extract the package
+	tarCmd := exec.Command("tar", "-zxvf", file)
+	err = tarCmd.Run()
 	if err != nil {
 		return err
 	}
-	println("moved the binaries to", home)
+	println("Extrated the binaries to", dir)
+
+	// remove
+	err = os.RemoveAll(homeVerDir)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(homeDir, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	println("Init home dir at", homeDir)
+
+	err = os.Rename(extractDir, homeVerDir)
+	if err != nil {
+		println(err.Error())
+		return err
+	}
+	println("moved the binaries to", homeVerDir)
 
 	// delete the package extracted
 	rmCmd := exec.Command("rm", "-rf", dir)
@@ -182,9 +189,4 @@ func downloadFile(filepath string, url string) error {
 	}
 
 	return nil
-}
-
-func init() {
-	rootCmd.AddCommand(downloadCmd)
-	downloadCmd.Flags().StringVar(&distro, "distro", "ubuntu1804", "allows you specify the linux distro")
 }
