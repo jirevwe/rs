@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,19 +12,32 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
+)
+
+var (
+	distro                  = ""
+	base                    = "https://fastdl.mongodb.org"
+	ErrInvalidVersionFormat = errors.New("please pass a valid mongodb version; version must be in x.x.x format")
 )
 
 func init() {
 	rootCmd.AddCommand(downloadCmd)
-	downloadCmd.Flags().StringVar(&distro, "distro", "ubuntu1804", "specify the linux distro")
-	downloadCmd.Flags().StringVar(&version, "version", "4.2.21", "specify the mongodb version")
+	downloadCmd.Flags().StringVarP(&distro, "distro", "d", "ubuntu1804", "the linux distro")
 }
 
 var downloadCmd = &cobra.Command{
-	Use:   "download",
+	Use:   "download [<version>]",
 	Short: "Downloads a mongodb version",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// default mongodb version
+		version := "4.2.21"
+
+		if len(args) > 0 {
+			version = args[0]
+		}
+
 		major, minor, err := parseVersionNumber(version)
 		if err != nil {
 			return err
@@ -33,6 +47,8 @@ var downloadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		fmt.Printf("Downloading MongoDB %s from %s\n", version, url)
 
 		err = downloadFile(file, url)
 		if err != nil {
@@ -76,7 +92,6 @@ func extract(file, dir, version string) error {
 	if err != nil {
 		return err
 	}
-	println("Init home dir at", homeDir)
 
 	err = os.Rename(extractDir, homeVerDir)
 	if err != nil {
@@ -165,6 +180,13 @@ func downloadFile(filepath string, url string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	bar := progressbar.DefaultBytes(resp.ContentLength, "Downloading")
+
+	_, err = io.Copy(io.MultiWriter(out, bar), resp.Body)
+	if err != nil {
+		return fmt.Errorf("progress bar: %s", err.Error())
+	}
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {

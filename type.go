@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"errors"
 	"strings"
 )
 
@@ -29,11 +28,3 @@ func GetVersion() string {
 	v = strings.TrimSuffix(string(f), "\n")
 	return v
 }
-
-var (
-	dbPath                  = ""
-	distro                  = ""
-	version                 = ""
-	base                    = "https://fastdl.mongodb.org"
-	ErrInvalidVersionFormat = errors.New("please pass a valid mongodb version; version must be in x.x.x format")
-)

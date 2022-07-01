@@ -10,16 +10,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var dbPath = ""
+
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().StringVar(&dbPath, "db-path", "data", "the mongodb dp path")
-	runCmd.Flags().StringVar(&version, "version", "4.2.21", "specify the mongodb version")
+	runCmd.Flags().StringVar(&dbPath, "db-path", "", "the mongodb db path")
 }
 
 var runCmd = &cobra.Command{
-	Use:   "run",
+	Use:   "run [<version>]",
 	Short: "Configures and runs a mongodb version",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// default mongodb version
+		version := "4.2.21"
+
+		if len(args) > 0 {
+			version = args[0]
+		}
+
 		homedir, err := os.UserHomeDir()
 		if err != nil {
 			return err
@@ -40,7 +48,7 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Mongo Daemon started Successfully\n\n")
+		fmt.Printf("mongo daemon started Successfully\n\n")
 
 		time.Sleep(1 * time.Second)
 
@@ -48,7 +56,7 @@ var runCmd = &cobra.Command{
 		mongoShell.Stdout = os.Stdout
 
 		input := &bytes.Buffer{}
-		input.Write([]byte("rs.initiate()\nshow dbs"))
+		input.Write([]byte("rs.initiate()"))
 		mongoShell.Stdin = input
 
 		err = mongoShell.Run()
