@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,13 +14,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	distro                  = ""
-	version                 = ""
-	base                    = "https://fastdl.mongodb.org"
-	ErrInvalidVersionFormat = errors.New("please pass a valid mongodb version; version must be in x.x.x format")
-)
-
 func init() {
 	rootCmd.AddCommand(downloadCmd)
 	downloadCmd.Flags().StringVar(&distro, "distro", "ubuntu1804", "specify the linux distro")
@@ -30,8 +22,7 @@ func init() {
 
 var downloadCmd = &cobra.Command{
 	Use:   "download",
-	Short: "Downloads and configures a mongodb version",
-	Long:  "Downloads and configures a mongodb version",
+	Short: "Downloads a mongodb version",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		major, minor, err := parseVersionNumber(version)
 		if err != nil {
