@@ -8,6 +8,10 @@ rs is a zero config mongodb replica set runner
 go install github.com/jirevwe/rs
 ```
 
+## Download
+
+You can download the binary from the [releases](https://github.com/jirevwe/rs/releases) page
+
 ## Usage
 
 Start a single node [replica set](https://www.mongodb.com/docs/manual/tutorial/convert-standalone-to-replica-set/) running MongoDB 4.2.21
