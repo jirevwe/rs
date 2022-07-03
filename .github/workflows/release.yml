@@ -1,0 +1,32 @@
+name: Release Go Binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Manual workflow name"
+        required: true
+  push:
+    tags:
+      # Release binary for every tag.
+      - v0.*
+
+jobs:
+  release-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin]
+        goarch: ["amd64", "arm64"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: wangyoucao577/go-release-action@v1.29
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: "1.17"
+          project_path: "./cmd"
+          binary_name: "rs"
+          extra_files: LICENSE README.md
