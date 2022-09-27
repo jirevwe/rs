@@ -10,11 +10,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var dbPath = ""
+var (
+	dbPath = ""
+)
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().StringVar(&dbPath, "db-path", "", "the mongodb db path")
+	runCmd.Flags().StringVar(&dbPath, "db", "", "the mongodb db path")
 }
 
 var runCmd = &cobra.Command{
@@ -35,6 +37,8 @@ var runCmd = &cobra.Command{
 
 		binDir := fmt.Sprintf("%s/.rs/%s/bin", homedir, version)
 		dataDir := fmt.Sprintf("%s/.rs/%s/data", homedir, version)
+		logDir := fmt.Sprintf("%s/.rs/%s/log", homedir, version)
+		logfile := fmt.Sprintf("%s/%s", logDir, "mongod.log")
 		mongodDir := fmt.Sprintf("%s/%s", binDir, "mongod")
 		mongoshDir := fmt.Sprintf("%s/%s", binDir, "mongo")
 
@@ -43,11 +47,41 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		mongod := exec.Command(mongodDir, "--dbpath", dataDir, "--replSet", "localhost")
+		err = os.MkdirAll(logDir, os.ModePerm)
+		if err != nil {
+			return err
+		}
+
+		defaultCliArgs := []string{
+			"--dbpath", dataDir,
+		}
+
+		overridenCliArgs := []string{
+			"--dbpath", dbPath,
+		}
+
+		cliArgs := []string{
+			"--replSet", "localhost",
+			"--logpath", logfile,
+			"--journal",
+		}
+
+		if len(dbPath) == 0 {
+			cliArgs = append(cliArgs, defaultCliArgs...)
+		} else {
+			cliArgs = append(cliArgs, overridenCliArgs...)
+		}
+
+		mongod := exec.Command(mongodDir, cliArgs...)
 		err = mongod.Start()
 		if err != nil {
 			return err
 		}
+
+		if mongod.Process == nil {
+			return fmt.Errorf("failed to start mongo daemon\n\n")
+		}
+
 		fmt.Printf("mongo daemon started Successfully\n\n")
 
 		time.Sleep(1 * time.Second)
