@@ -121,7 +121,6 @@ func getDownloadUrl(version string, os string, distro string, major int64, minor
 		} else {
 			dir = fmt.Sprintf("mongodb-linux-x86_64-%s-%s", distro, version)
 		}
-		break
 	case "darwin":
 		os = "osx"
 		if isBefore42 {
@@ -129,7 +128,6 @@ func getDownloadUrl(version string, os string, distro string, major int64, minor
 		} else {
 			dir = fmt.Sprintf("mongodb-macos-x86_64-%s", version)
 		}
-		break
 	default:
 		return "", "", "", fmt.Errorf("Unrecognized os %s", os)
 	}
